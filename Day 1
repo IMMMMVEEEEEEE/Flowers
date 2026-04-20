@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Will You Be My Boyfriend?</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&family=Cinzel:wght@400;600&display=swap');
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  width:100vw; height:100vh; overflow:hidden;
+  background:#02010a;
+  font-family:'Cormorant Garamond',serif;
+  transition: background 2s ease;
+}
+
+/* ── GALAXY BACKGROUND ── */
+#galaxyCanvas {
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+}
+
+/* ── FLOWER SVG ── */
+#flowerCanvas {
+  position:fixed; inset:0; z-index:1; pointer-events:none;
+  transition: opacity 1.5s ease;
+}
+
+/* ── EFFECT CANVASES ── */
+#fireCanvas, #bloomCanvas {
+  position:fixed; inset:0; z-index:8; pointer-events:none;
+  opacity:0; transition:opacity .5s;
+}
+#fireCanvas.active, #bloomCanvas.active { opacity:1; }
+
+/* ── LAYOUT ── */
+.layout {
+  position:fixed; inset:0; z-index:5;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:space-between;
+  padding:28px 24px 36px;
+  pointer-events:none;
+}
+
+.top-message {
+  text-align:center;
+  animation:fadeDown .9s ease both;
+  transition:opacity .6s ease;
+}
+@keyframes fadeDown { from{opacity:0;transform:translateY(-16px)} to{opacity:1;transform:translateY(0)} }
+.top-message p {
+  font-style:italic; font-weight:300;
+  font-size:clamp(.95rem,2.1vw,1.35rem);
+  color:rgba(220,190,255,.72);
+  letter-spacing:.13em;
+  text-shadow:0 0 25px rgba(160,80,255,.55),0 0 60px rgba(100,40,200,.25);
+}
+
+.bottom-ui {
+  display:flex; flex-direction:column; align-items:center; gap:22px;
+  pointer-events:all;
+  animation:fadeUp 1s .4s ease both;
+  transition:opacity .5s ease;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+
+.main-question {
+  font-family:'Cinzel',serif;
+  font-size:clamp(1.5rem,3.8vw,2.8rem);
+  font-weight:600; color:#fff; text-align:center;
+  letter-spacing:.07em;
+  text-shadow:0 0 18px rgba(255,105,200,.95),0 0 45px rgba(255,20,180,.6),0 0 90px rgba(200,0,180,.3);
+}
+
+.btn-row { display:flex; gap:28px; align-items:center; }
+
+.btn-yes {
+  position:relative; padding:14px 48px;
+  font-family:'Cinzel',serif; font-size:1.1rem; font-weight:600;
+  letter-spacing:.2em; color:#fff9e6;
+  background:linear-gradient(135deg,rgba(255,220,120,.13),rgba(255,255,200,.06));
+  border:1.5px solid rgba(255,215,0,.72); border-radius:50px; cursor:pointer;
+  text-shadow:0 0 11px #ffd700,0 0 28px rgba(255,220,120,.8);
+  box-shadow:0 0 20px rgba(255,215,0,.3),0 0 55px rgba(255,180,100,.12),inset 0 0 18px rgba(255,220,120,.05);
+  transition:all .25s ease;
+}
+.btn-yes::before{content:'✦';position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:.78rem;color:#ffd700;text-shadow:0 0 8px #ffd700;animation:sparkle 2s ease infinite}
+.btn-yes::after{content:'✦';position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:.78rem;color:#ffd700;text-shadow:0 0 8px #ffd700;animation:sparkle 2s .5s ease infinite}
+@keyframes sparkle{0%,100%{opacity:.4;transform:translateY(-50%) scale(.8)}50%{opacity:1;transform:translateY(-50%) scale(1.2)}}
+.btn-yes:hover{box-shadow:0 0 36px rgba(255,215,0,.55),0 0 80px rgba(255,180,100,.28);transform:translateY(-2px) scale(1.04)}
+
+.btn-no {
+  position:relative; padding:14px 48px;
+  font-family:'Cinzel',serif; font-size:1.1rem; font-weight:600;
+  letter-spacing:.2em; color:rgba(255,80,80,.92);
+  background:linear-gradient(135deg,rgba(160,0,0,.17),rgba(60,0,0,.09));
+  border:1.5px solid rgba(200,30,30,.6); border-radius:50px; cursor:pointer;
+  text-shadow:0 0 11px rgba(255,60,60,.8),0 0 24px rgba(200,0,0,.5);
+  box-shadow:0 0 20px rgba(200,0,0,.2),inset 0 0 18px rgba(200,0,0,.05);
+  transition:all .25s ease;
+}
+.btn-no::before{content:'𖤐';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:.82rem;color:rgba(255,60,60,.7);animation:flicker 1.5s ease infinite}
+.btn-no::after{content:'𖤐';position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:.82rem;color:rgba(255,60,60,.7);animation:flicker 1.5s .4s ease infinite}
+@keyframes flicker{0%,100%{opacity:.3}50%{opacity:.9}}
+.btn-no:hover{box-shadow:0 0 38px rgba(255,50,50,.42),0 0 80px rgba(200,0,0,.2);transform:translateY(-2px) scale(1.04);color:rgba(255,110,110,1);border-color:rgba(255,50,50,.82)}
+
+/* ── RESULT ── */
+#resultOverlay {
+  position:fixed; inset:0; z-index:12;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none; transition:opacity .7s ease;
+}
+#resultOverlay.visible{opacity:1;pointer-events:all}
+#resultText{text-align:center;padding:0 24px}
+</style>
+</head>
+<body>
+
+<canvas id="galaxyCanvas"></canvas>
+<svg id="flowerCanvas" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="gPink" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="4.5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="gGreen" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="5.5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="gSoft" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="11" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="gHard" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+</svg>
+
+<canvas id="fireCanvas"></canvas>
+<canvas id="bloomCanvas"></canvas>
+
+<div class="layout">
+  <div class="top-message">
+    <p>i've had such a good time thus far and i think it's time to make this official</p>
+  </div>
+  <div class="bottom-ui">
+    <div class="main-question">Will you be my boyfriend?</div>
+    <div class="btn-row">
+      <button class="btn-yes" onclick="onYes()">YES</button>
+      <button class="btn-no"  onclick="onNo()">NO</button>
+    </div>
+  </div>
+</div>
+
+<div id="resultOverlay"><div id="resultText"></div></div>
+
+<script>
+const svgEl = document.getElementById('flowerCanvas');
+const W = () => window.innerWidth;
+const H = () => window.innerHeight;
+
+function ns(tag, a={}) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k,v] of Object.entries(a)) el.setAttribute(k,v);
+  return el;
+}
+
+const PINKS  = ['#ff14b4','#ff4fd8','#ff80ea','#ff1493','#ff69b4','#ff00cc','#e91e8c'];
+const GREENS = ['#00ff88','#39ffaa','#7fff6f','#00e676','#00ffb3'];
+
+// ════════════════════════════════
+//  GALAXY BACKGROUND
+// ════════════════════════════════
+const galCanvas = document.getElementById('galaxyCanvas');
+const galCtx = galCanvas.getContext('2d');
+let stars = [], nebulae = [];
+
+function initGalaxy() {
+  galCanvas.width = W(); galCanvas.height = H();
+  stars = [];
+  // Stars - three layers of depth
+  for (let i=0; i<320; i++) {
+    stars.push({
+      x: Math.random()*W(), y: Math.random()*H(),
+      r: Math.random()*1.6,
+      opacity: .2+Math.random()*.8,
+      twinkleSpeed: .5+Math.random()*2,
+      twinkleOffset: Math.random()*Math.PI*2,
+      color: Math.random()>.7 ? `rgba(200,160,255,1)` : Math.random()>.5 ? `rgba(180,220,255,1)` : `rgba(255,255,255,1)`
+    });
+  }
+  // Nebula blobs
+  nebulae = [
+    { x:W()*.2,  y:H()*.3,  rx:W()*.35, ry:H()*.4, color:'rgba(120,30,220,.055)' },
+    { x:W()*.75, y:H()*.6,  rx:W()*.3,  ry:H()*.35, color:'rgba(200,20,150,.05)'  },
+    { x:W()*.5,  y:H()*.5,  rx:W()*.5,  ry:H()*.5, color:'rgba(30,10,80,.09)'   },
+    { x:W()*.85, y:H()*.2,  rx:W()*.28, ry:H()*.3, color:'rgba(80,20,200,.045)'  },
+    { x:W()*.1,  y:H()*.8,  rx:W()*.32, ry:H()*.28, color:'rgba(160,40,255,.04)'  },
+  ];
+}
+
+function drawGalaxy(ts) {
+  galCtx.clearRect(0,0,W(),H());
+
+  // Deep space base
+  const base = galCtx.createRadialGradient(W()*.5,H()*.5,0,W()*.5,H()*.5,Math.max(W(),H())*.75);
+  base.addColorStop(0,'#0a0520');
+  base.addColorStop(.5,'#06021a');
+  base.addColorStop(1,'#02010a');
+  galCtx.fillStyle=base; galCtx.fillRect(0,0,W(),H());
+
+  // Nebulae
+  nebulae.forEach(n=>{
+    galCtx.save();
+    galCtx.translate(n.x,n.y);
+    galCtx.scale(n.rx/100,n.ry/100);
+    const g=galCtx.createRadialGradient(0,0,0,0,0,100);
+    g.addColorStop(0,n.color);
+    g.addColorStop(1,'transparent');
+    galCtx.fillStyle=g;
+    galCtx.beginPath(); galCtx.arc(0,0,100,0,Math.PI*2);
+    galCtx.fill(); galCtx.restore();
+  });
+
+  // Milky way diagonal band
+  const mw = galCtx.createLinearGradient(0,H()*.7,W(),H()*.1);
+  mw.addColorStop(0,'transparent');
+  mw.addColorStop(.3,'rgba(140,80,255,.025)');
+  mw.addColorStop(.5,'rgba(180,120,255,.04)');
+  mw.addColorStop(.7,'rgba(140,80,255,.025)');
+  mw.addColorStop(1,'transparent');
+  galCtx.fillStyle=mw; galCtx.fillRect(0,0,W(),H());
+
+  // Stars with twinkle
+  stars.forEach(s=>{
+    const twinkle = .4+.6*(.5+.5*Math.sin(ts*.001*s.twinkleSpeed+s.twinkleOffset));
+    galCtx.beginPath();
+    galCtx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    galCtx.fillStyle=s.color.replace('1)',`${s.opacity*twinkle})`);
+    galCtx.fill();
+    if (s.r>1.1) {
+      // Star cross gleam
+      galCtx.strokeStyle=s.color.replace('1)',`${s.opacity*twinkle*.4})`);
+      galCtx.lineWidth=.5;
+      galCtx.beginPath(); galCtx.moveTo(s.x-s.r*3,s.y); galCtx.lineTo(s.x+s.r*3,s.y); galCtx.stroke();
+      galCtx.beginPath(); galCtx.moveTo(s.x,s.y-s.r*3); galCtx.lineTo(s.x,s.y+s.r*3); galCtx.stroke();
+    }
+  });
+}
+
+// ════════════════════════════════
+//  STEMS – organic cubic bezier
+// ════════════════════════════════
+function drawStem(parent, x, groundY, flowerY, depthScale) {
+  const stemW = depthScale;
+  // Natural sway: control points offset horizontally like real flower stalks
+  const lean = (Math.random()-.5)*55 * depthScale;
+  const c1x = x + lean*.45 + (Math.random()-.5)*22;
+  const c1y = groundY - (groundY-flowerY)*.28;
+  const c2x = x + lean*.82 + (Math.random()-.5)*18;
+  const c2y = groundY - (groundY-flowerY)*.62;
+  const tipX = x + lean + (Math.random()-.5)*12;
+  const tipY = flowerY;
+
+  const d = `M ${x} ${groundY} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${tipX} ${tipY}`;
+
+  // Glow
+  parent.appendChild(ns('path',{ d, stroke:GREENS[0],'stroke-width':stemW*7, fill:'none',opacity:.15,filter:'url(#gGreen)' }));
+  // Main
+  parent.appendChild(ns('path',{ d, stroke:GREENS[1],'stroke-width':stemW*2.4, fill:'none',opacity:.88 }));
+  // Highlight
+  parent.appendChild(ns('path',{ d, stroke:'#ffffff','stroke-width':stemW*.7, fill:'none',opacity:.14 }));
+
+  // Leaves at 30–60% along the curve
+  [.35,.62].forEach((t,i)=>{
+    if (i===1 && Math.random()>.55) return;
+    // Point on cubic bezier
+    const bt = cubicBezierPoint(x,groundY,c1x,c1y,c2x,c2y,tipX,tipY,t);
+    addLeaf(parent, bt.x, bt.y, i%2===0?1:-1, depthScale);
+  });
+
+  return { tipX, tipY };
+}
+
+function cubicBezierPoint(x0,y0,x1,y1,x2,y2,x3,y3,t) {
+  const mt=1-t;
+  return {
+    x: mt*mt*mt*x0 + 3*mt*mt*t*x1 + 3*mt*t*t*x2 + t*t*t*x3,
+    y: mt*mt*mt*y0 + 3*mt*mt*t*y1 + 3*mt*t*t*y2 + t*t*t*y3
+  };
+}
+
+function addLeaf(parent, x, y, side, scale) {
+  const size = (26+Math.random()*20)*scale;
+  const ang  = side*(36+Math.random()*26);
+  const rad  = ang*Math.PI/180;
+  const tx   = x+Math.cos(rad)*size*1.05;
+  const ty   = y+Math.sin(rad)*size*1.05;
+  const cpx  = x+Math.cos(rad)*size*.52+Math.cos(rad+Math.PI/2)*size*.38*side;
+  const cpy  = y+Math.sin(rad)*size*.52+Math.sin(rad+Math.PI/2)*size*.38*side;
+  const cp2x = x+Math.cos(rad)*size*.52-Math.cos(rad+Math.PI/2)*size*.2*side;
+  const cp2y = y+Math.sin(rad)*size*.52-Math.sin(rad+Math.PI/2)*size*.2*side;
+  const d=`M ${x} ${y} Q ${cpx} ${cpy} ${tx} ${ty} Q ${cp2x} ${cp2y} ${x} ${y} Z`;
+  parent.appendChild(ns('path',{ d, fill:GREENS[2],opacity:.16,filter:'url(#gGreen)' }));
+  parent.appendChild(ns('path',{ d, fill:'none',stroke:GREENS[0],'stroke-width':scale*1.4,opacity:.8 }));
+  parent.appendChild(ns('path',{ d:`M ${x} ${y} Q ${cpx} ${cpy} ${tx} ${ty}`, fill:'none',stroke:GREENS[2],'stroke-width':scale*.6,opacity:.5 }));
+}
+
+// ════════════════════════════════
+//  FLOWER HEADS
+// ════════════════════════════════
+function drawFlower(parent, x, y, size, pColor, aColor, type, swayId) {
+  const outer = ns('g',{ transform:`translate(${x},${y})` });
+  parent.appendChild(outer);
+
+  // Halo
+  outer.appendChild(ns('circle',{ cx:0,cy:0,r:size*1.3,fill:pColor,opacity:.06,filter:'url(#gSoft)' }));
+
+  const head = ns('g',{ id:swayId });
+  outer.appendChild(head);
+
+  // Add SMIL sway (gentle back-and-forth rotate, not full spin)
+  const swayAmt = 4+Math.random()*5;
+  const swayDur = 3+Math.random()*3;
+  const swayOff = Math.random()*Math.PI*2;
+  head.appendChild(ns('animateTransform',{
+    attributeName:'transform', type:'rotate',
+    values:`${-swayAmt} 0 ${size*1.2};${swayAmt} 0 ${size*1.2};${-swayAmt} 0 ${size*1.2}`,
+    dur:`${swayDur}s`,
+    repeatCount:'indefinite',
+    calcMode:'spline',
+    keySplines:'.45 0 .55 1;.45 0 .55 1'
+  }));
+
+  if      (type==='rose')    drawRose(head,size,pColor,aColor);
+  else if (type==='daisy')   drawDaisy(head,size,pColor,aColor);
+  else if (type==='peony')   drawPeony(head,size,pColor,aColor);
+  else                       drawAnemone(head,size,pColor,aColor);
+}
+
+function drawRose(g,s,pc,ac) {
+  // Sepals
+  for (let i=0;i<5;i++) {
+    const a=(360/5)*i+36, rad=a*Math.PI/180;
+    const px=Math.cos(rad)*s*.7,py=Math.sin(rad)*s*.7;
+    g.appendChild(ns('ellipse',{cx:px,cy:py,rx:s*.065,ry:s*.26,fill:'none',stroke:GREENS[0],'stroke-width':s*.022,opacity:.65,transform:`rotate(${a+90},${px},${py})`}));
+  }
+  for (let l=5;l>=1;l--) {
+    const count=5+l, r=s*(.18+l*.19), off=l*22;
+    for (let i=0;i<count;i++) {
+      const a=(360/count)*i+off, rad=a*Math.PI/180;
+      const px=Math.cos(rad)*r*.58,py=Math.sin(rad)*r*.58;
+      const pL=s*(.19+l*.022),pW=s*(.086+l*.01);
+      g.appendChild(ns('ellipse',{cx:px,cy:py,rx:pW*1.8,ry:pL*1.3,fill:pc,opacity:.06+(5-l)*.054,filter:'url(#gSoft)',transform:`rotate(${a+90},${px},${py})`}));
+      g.appendChild(ns('ellipse',{cx:px,cy:py,rx:pW,ry:pL,fill:'none',stroke:pc,'stroke-width':s*.03,opacity:.82+.03*l,filter:'url(#gHard)',transform:`rotate(${a+90},${px},${py})`}));
+      g.appendChild(ns('path',{d:`M ${px} ${py+pL*.36} L ${px} ${py-pL*.38}`,stroke:'rgba(255,255,255,.18)','stroke-width':.6,fill:'none',transform:`rotate(${a+90},${px},${py})`}));
+    }
+  }
+  for (let i=0;i<10;i++) {
+    const a=(360/10)*i,r=s*.13;
+    const sx=Math.cos(a*Math.PI/180)*r,sy=Math.sin(a*Math.PI/180)*r;
+    g.appendChild(ns('line',{x1:0,y1:0,x2:sx,y2:sy,stroke:ac,'stroke-width':s*.02,opacity:.82}));
+    g.appendChild(ns('circle',{cx:sx,cy:sy,r:s*.036,fill:ac,opacity:.9,filter:'url(#gHard)'}));
+  }
+  g.appendChild(ns('circle',{cx:0,cy:0,r:s*.095,fill:'white',opacity:.88}));
+}
+
+function drawDaisy(g,s,pc,ac) {
+  const count=16;
+  for (let i=0;i<count;i++) {
+    const a=(360/count)*i,rad=a*Math.PI/180;
+    const px=Math.cos(rad)*s*.8,py=Math.sin(rad)*s*.8;
+    const pL=s*.44,pW=s*.095;
+    g.appendChild(ns('ellipse',{cx:px,cy:py,rx:pW*1.9,ry:pL*1.22,fill:pc,opacity:.2,filter:'url(#gSoft)',transform:`rotate(${a+90},${px},${py})`}));
+    g.appendChild(ns('ellipse',{cx:px,cy:py,rx:pW,ry:pL,fill:'none',stroke:pc,'stroke-width':s*.036,opacity:.92,filter:'url(#gHard)',transform:`rotate(${a+90},${px},${py})`}));
+    g.appendChild(ns('ellipse',{cx:px,cy:py,rx:pW*.26,ry:pL*.68,fill:'white',opacity:.12,transform:`rotate(${a+90},${px},${py})`}));
+  }
+  g.appendChild(ns('circle',{cx:0,cy:0,r:s*.28,fill:ac,opacity:.4,filter:'url(#gGreen)'}));
+  for (let i=0;i<12;i++) {
+    const a=(360/12)*i,r=s*.17;
+    g.appendChild(ns('circle',{cx:Math.cos(a*Math.PI/180)*r,cy:Math.sin(a*Math.PI/180)*r,r:s*.04,fill:ac,opacity:.72}));
+  }
+  g.appendChild(ns('circle',{cx:0,cy:0,r:s*.095,fill:'white',opacity:.88}));
+}
+
+function drawPeony(g,s,pc,ac) {
+  for (let l=5;l>=1;l--) {
+    const count=6+l*2,r=s*(.17+l*.18),off=l*16;
+    for (let i=0;i<count;i++) {
+      const a=(360/count)*i+off,rad=a*Math.PI/180;
+      const px=Math.cos(rad)*r*.6,py=Math.sin(rad)*r*.6;
+      const pL=s*(.18+l*.024),pW=s*(.095+l*.011);
+      g.appendChild(ns('ellipse',{cx:px,cy:py,rx:pW*1.65,ry:pL*1.28,fill:pc,opacity:.055+(5-l)*.065,filter:'url(#gSoft)',transform:`rotate(${a+90},${px},${py})`}));
+      g.appendChild(ns('ellipse',{cx:px,cy:py,rx:pW,ry:pL,fill:'none',stroke:pc,'stroke-width':s*.028,opacity:.74,filter:'url(#gHard)',transform:`rotate(${a+90},${px},${py})`}));
+    }
+  }
+  g.appendChild(ns('circle',{cx:0,cy:0,r:s*.15,fill:ac,opacity:.8,filter:'url(#gGreen)'}));
+  g.appendChild(ns('circle',{cx:0,cy:0,r:s*.07,fill:'white',opacity:.94}));
+}
+
+function drawAnemone(g,s,pc,ac) {
+  for (let i=0;i<6;i++) {
+    const a=(360/6)*i,rad=a*Math.PI/180;
+    const px=Math.cos(rad)*s*.7,py=Math.sin(rad)*s*.7;
+    const pL=s*.5,pW=s*.2;
+    g.appendChild(ns('ellipse',{cx:px,cy:py,rx:pW*1.55,ry:pL*1.2,fill:pc,opacity:.2,filter:'url(#gSoft)',transform:`rotate(${a+90},${px},${py})`}));
+    g.appendChild(ns('ellipse',{cx:px,cy:py,rx:pW,ry:pL,fill:'none',stroke:pc,'stroke-width':s*.038,opacity:.9,filter:'url(#gPink)',transform:`rotate(${a+90},${px},${py})`}));
+    const bx=Math.cos(rad)*s*.2,by=Math.sin(rad)*s*.2;
+    g.appendChild(ns('line',{x1:0,y1:0,x2:bx,y2:by,stroke:'rgba(0,0,0,.4)','stroke-width':pW*.5,opacity:.5}));
+  }
+  g.appendChild(ns('circle',{cx:0,cy:0,r:s*.28,fill:'none',stroke:ac,'stroke-width':s*.05,opacity:.48,filter:'url(#gGreen)'}));
+  for (let i=0;i<18;i++) {
+    const a=(360/18)*i,r=s*.22;
+    g.appendChild(ns('circle',{cx:Math.cos(a*Math.PI/180)*r,cy:Math.sin(a*Math.PI/180)*r,r:s*.032,fill:ac,opacity:.88}));
+  }
+  g.appendChild(ns('circle',{cx:0,cy:0,r:s*.095,fill:'white',opacity:.9}));
+}
+
+// ════════════════════════════════
+//  BUILD SCENE – depth layers
+// ════════════════════════════════
+function buildScene() {
+  svgEl.querySelectorAll(':not(defs)').forEach(el=>el.remove());
+  const w=W(), h=H();
+  const types=['rose','daisy','peony','anemone'];
+
+  // Depth layers: far back → mid → front
+  // Each layer: ground line lower on screen = closer to viewer
+  const layers = [
+    // [depthScale, groundY fraction, flower size multiplier, count, opacity]
+    { scale:.52, groundFrac:.78, sizeMin:28, sizeMax:45, count:7,  opacity:.55 },
+    { scale:.72, groundFrac:.85, sizeMin:45, sizeMax:65, count:8,  opacity:.75 },
+    { scale:1.0, groundFrac:.93, sizeMin:62, sizeMax:98, count:9,  opacity:1.0  },
+  ];
+
+  layers.forEach((layer,li)=>{
+    const stemGroup = ns('g',{ opacity:layer.opacity.toString() });
+    svgEl.appendChild(stemGroup);
+    const flowerGroup = ns('g',{ opacity:layer.opacity.toString() });
+    svgEl.appendChild(flowerGroup);
+
+    const groundY = h * layer.groundFrac;
+    // Spread flowers across width with slight random jitter
+    for (let i=0; i<layer.count; i++) {
+      const baseX = w * (.05 + (.9/(layer.count-1))*i);
+      const x = baseX + (Math.random()-.5)*w*.06;
+      const size = (layer.sizeMin + Math.random()*(layer.sizeMax-layer.sizeMin)) * 1;
+      const stemH = size*1.2 + Math.random()*h*.14;
+      const flowerY = groundY - stemH;
+
+      const stemInfo = drawStem(stemGroup, x, groundY, flowerY, layer.scale);
+      const p = PINKS[(li*layer.count+i) % PINKS.length];
+      const a = GREENS[(li*layer.count+i) % GREENS.length];
+      drawFlower(flowerGroup, stemInfo.tipX, stemInfo.tipY, size, p, a, types[(li*3+i)%types.length], `sw_${li}_${i}`);
+    }
+  });
+}
+
+buildScene();
+window.addEventListener('resize',()=>{ initGalaxy(); buildScene(); });
+
+// ════════════════════════════════
+//  GALAXY ANIMATION LOOP
+// ════════════════════════════════
+function galaxyLoop(ts) {
+  drawGalaxy(ts);
+  requestAnimationFrame(galaxyLoop);
+}
+initGalaxy();
+requestAnimationFrame(galaxyLoop);
+
+// ════════════════════════════════
+//  FIRE EFFECT
+// ════════════════════════════════
+const fireCanvas = document.getElementById('fireCanvas');
+const fCtx = fireCanvas.getContext('2d');
+let fireActive=false, fireParticles=[];
+
+function newFireP(init=false) {
+  return {
+    x: Math.random()*W(),
+    y: init ? H()*(.2+Math.random()*.8) : H()*(.65+Math.random()*.35),
+    vx: (Math.random()-.5)*2.8,
+    vy: -(1.6+Math.random()*5),
+    life:0, maxLife:.32+Math.random()*.52,
+    size:7+Math.random()*26,
+    phase:Math.random()*Math.PI*2
+  };
+}
+
+function animFire(ts) {
+  if (!fireActive) return;
+  fireCanvas.width=W(); fireCanvas.height=H();
+  fCtx.clearRect(0,0,W(),H());
+  for (let i=0;i<18;i++) fireParticles.push(newFireP());
+  for (let i=fireParticles.length-1;i>=0;i--) {
+    const p=fireParticles[i];
+    p.y+=p.vy; p.x+=p.vx+Math.sin(ts*.003+p.phase)*.85; p.life+=.013;
+    const prog=p.life/p.maxLife;
+    if (prog>1){fireParticles.splice(i,1);continue;}
+    const alpha=prog<.28?prog/.28:1-(prog-.28)/.72;
+    const r=p.size*(1-prog*.42);
+    const c=prog<.18?`rgba(255,255,200,${alpha*.92})`:prog<.4?`rgba(255,210,50,${alpha*.88})`:prog<.65?`rgba(255,100,18,${alpha*.82})`:`rgba(200,18,8,${alpha*.72})`;
+    const grad=fCtx.createRadialGradient(p.x,p.y,0,p.x,p.y,r);
+    grad.addColorStop(0,c); grad.addColorStop(1,'transparent');
+    fCtx.beginPath(); fCtx.arc(p.x,p.y,r,0,Math.PI*2);
+    fCtx.fillStyle=grad; fCtx.fill();
+  }
+  requestAnimationFrame(animFire);
+}
+
+// ════════════════════════════════
+//  YES – light bloom (NO canvas spam)
+// ════════════════════════════════
+const bloomCanvas = document.getElementById('bloomCanvas');
+const bCtx = bloomCanvas.getContext('2d');
+let bloomActive=false, bloomPetals=[];
+const bloomColors=[...PINKS,...GREENS,'#ffd700','#fff0fa'];
+
+function newBloomPetal() {
+  return {
+    x: Math.random()*W(), y: H()+10,
+    vx:(Math.random()-.5)*2.5, vy:-(2.5+Math.random()*5.5),
+    rot:Math.random()*360, rotV:(Math.random()-.5)*4.5,
+    w:8+Math.random()*20, h:14+Math.random()*36,
+    color:bloomColors[Math.floor(Math.random()*bloomColors.length)],
+    life:0, maxLife:.6+Math.random()*.35,
+    wobble:Math.random()*Math.PI*2
+  };
+}
+
+function animBloom(ts) {
+  if (!bloomActive) return;
+  bloomCanvas.width=W(); bloomCanvas.height=H();
+  bCtx.clearRect(0,0,W(),H());
+  // Only spawn if under cap
+  if (bloomPetals.length<90) for (let i=0;i<5;i++) bloomPetals.push(newBloomPetal());
+  for (let i=bloomPetals.length-1;i>=0;i--) {
+    const p=bloomPetals[i];
+    p.y+=p.vy; p.x+=p.vx+Math.sin(ts*.002+p.wobble)*1.1; p.rot+=p.rotV; p.life+=.009;
+    const prog=p.life/p.maxLife;
+    if (prog>1||p.y<-60){bloomPetals.splice(i,1);continue;}
+    const alpha=prog<.15?prog/.15:prog>.82?(1-prog)/.18:1;
+    bCtx.save(); bCtx.translate(p.x,p.y); bCtx.rotate(p.rot*Math.PI/180);
+    bCtx.globalAlpha=alpha*.88;
+    bCtx.beginPath(); bCtx.ellipse(0,0,p.w*.45,p.h*.5,0,0,Math.PI*2);
+    bCtx.fillStyle=p.color; bCtx.shadowColor=p.color; bCtx.shadowBlur=12;
+    bCtx.fill(); bCtx.restore();
+  }
+  // Stop spawning after 6s but let existing ones finish
+  requestAnimationFrame(animBloom);
+}
+
+// ════════════════════════════════
+//  BUTTON HANDLERS
+// ════════════════════════════════
+function onYes() {
+  document.querySelector('.bottom-ui').style.opacity='0';
+  document.querySelector('.top-message').style.opacity='0';
+
+  bloomCanvas.classList.add('active');
+  bloomActive=true;
+  bloomCanvas.width=W(); bloomCanvas.height=H();
+  requestAnimationFrame(animBloom);
+  // Stop spawning after 7s
+  setTimeout(()=>{ bloomActive=false; },7000);
+
+  const overlay=document.getElementById('resultOverlay');
+  document.getElementById('resultText').innerHTML=`
+    <div style="font-family:'Cinzel',serif;font-size:clamp(2rem,5vw,3.8rem);font-weight:600;
+      background:linear-gradient(135deg,#ffd700,#ffaaee,#fff,#ffd700);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      filter:drop-shadow(0 0 22px rgba(255,215,0,.85));margin-bottom:16px;">
+      Yes! 🌸✨
+    </div>
+    <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;
+      font-size:clamp(1rem,2.4vw,1.6rem);color:rgba(255,230,245,.88);
+      text-shadow:0 0 30px rgba(255,150,220,.65);letter-spacing:.08em;">
+      You've made this garden bloom forever 💕
+    </div>`;
+  overlay.style.zIndex='15';
+  setTimeout(()=>overlay.classList.add('visible'),600);
+}
+
+function onNo() {
+  document.querySelector('.bottom-ui').style.opacity='0';
+  document.querySelector('.top-message').style.opacity='0';
+  document.body.style.background='#000';
+  document.getElementById('flowerCanvas').style.opacity='.1';
+
+  fireCanvas.classList.add('active');
+  fireActive=true;
+  fireCanvas.width=W(); fireCanvas.height=H();
+  for (let i=0;i<180;i++) fireParticles.push(newFireP(true));
+  requestAnimationFrame(animFire);
+
+  const overlay=document.getElementById('resultOverlay');
+  document.getElementById('resultText').innerHTML=`
+    <div style="font-family:'Cinzel',serif;font-size:clamp(1.8rem,5vw,3.5rem);font-weight:600;
+      color:rgba(255,60,30,.96);
+      text-shadow:0 0 28px rgba(255,60,0,1),0 0 75px rgba(200,20,0,.75);margin-bottom:14px;">
+      The garden burns… 🔥
+    </div>
+    <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;
+      font-size:clamp(.9rem,2.1vw,1.42rem);color:rgba(255,140,80,.78);
+      text-shadow:0 0 20px rgba(255,60,0,.55);letter-spacing:.08em;">
+      even the neon flowers mourn
+    </div>`;
+  setTimeout(()=>overlay.classList.add('visible'),900);
+}
+</script>
+</body>
+</html>
