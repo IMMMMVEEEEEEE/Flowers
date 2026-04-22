@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Will You Be My Boyfriend?</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&family=Cinzel:wght@400;600&display=swap');
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  width:100vw; height:100vh; overflow:hidden;
+  background: url('leopard.jpg') center/cover;
+  background-color: #07050f;
+  font-family:'Cormorant Garamond',serif;
+  transition: background 2s ease;
+}
+.floating-heart {
+  position: absolute;
+  color: transparent;
+  font-size: clamp(16px, 2.5vw, 28px);
+  pointer-events: none;
+  z-index: 1;
+  animation: directionalFly var(--duration) ease-in-out infinite alternate, twinkleHeart 2s ease-in-out infinite alternate;
+}
+@keyframes directionalFly {
+  0% { transform: translate(0, 0) rotate(var(--angle)) scale(1); }
+  100% { transform: translate(var(--tx), var(--ty)) rotate(var(--angle)) scale(1.1); }
+}
+@keyframes twinkleHeart {
+  0%, 100% { opacity: 0.3; filter: drop-shadow(0 0 2px var(--heartColor)); }
+  50% { opacity: 1; filter: drop-shadow(0 0 10px var(--heartColor)) drop-shadow(0 0 20px var(--heartColor)); }
+}
+#flowerCanvas {
+  position:fixed; inset:0; z-index:2; pointer-events:none;
+  width: 100vw; height: 100vh;
+  transition: opacity 1.5s ease;
+}
+#fireCanvas, #bloomCanvas {
+  position:fixed; inset:0; z-index:8; pointer-events:none;
+  opacity:0; transition:opacity .5s;
+}
+#fireCanvas.active, #bloomCanvas.active { opacity:1; }
+.layout {
+  position:fixed; inset:0; z-index:10; 
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  pointer-events:none;
+}
+.content-box {
+  background: rgba(8, 4, 15, 0.85); 
+  border: 1px solid rgba(160, 80, 255, 0.4);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(160, 80, 255, 0.1);
+  border-radius: 20px; padding: 40px 30px;
+  display: flex; flex-direction: column; align-items: center; gap: 30px;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.top-message {
+  text-align:center; animation:fadeDown .9s ease both; transition:opacity .6s ease;
+}
+@keyframes fadeDown { from{opacity:0;transform:translateY(-16px)} to{opacity:1;transform:translateY(0)} }
+.top-message p {
+  font-style:italic; font-weight:300; font-size:clamp(1rem,2.1vw,1.4rem);
+  color:rgba(255, 230, 255, 0.9); letter-spacing:.13em; text-shadow:0 0 15px rgba(160,80,255,.8);
+}
+.bottom-ui {
+  display:flex; flex-direction:column; align-items:center; gap:22px;
+  pointer-events:all; animation:fadeUp 1s .4s ease both; transition:opacity .5s ease;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+.main-question {
+  font-family:'Cinzel',serif; font-size:clamp(1.5rem,3.8vw,2.8rem);
+  font-weight:600; color:#fff; text-align:center;
+  letter-spacing:.07em; text-shadow:0 0 18px rgba(255,105,200,.95),0 0 45px rgba(255,20,180,.6);
+}
+.btn-row { display:flex; gap:28px; align-items:center; }
+.btn-yes {
+  position:relative; padding:14px 48px; font-family:'Cinzel',serif; font-size:1.1rem; font-weight:600;
+  letter-spacing:.2em; color:#fff9e6; background:linear-gradient(135deg,rgba(255,220,120,.13),rgba(255,255,200,.06));
+  border:1.5px solid rgba(255,215,0,.72); border-radius:50px; cursor:pointer;
+  text-shadow:0 0 11px #ffd700,0 0 28px rgba(255,220,120,.8);
+  box-shadow:0 0 20px rgba(255,215,0,.3),0 0 55px rgba(255,180,100,.12),inset 0 0 18px rgba(255,220,120,.05);
+  transition:all .25s ease;
+}
+.btn-yes::before, .btn-yes::after { content:'✦'; position:absolute; top:50%; transform:translateY(-50%); font-size:.78rem; color:#ffd700; text-shadow:0 0 8px #ffd700; animation:sparkle 2s ease infinite; }
+.btn-yes::before { left:14px; } .btn-yes::after { right:14px; animation-delay:.5s; }
+@keyframes sparkle{0%,100%{opacity:.4;transform:translateY(-50%) scale(.8)}50%{opacity:1;transform:translateY(-50%) scale(1.2)}}
+.btn-yes:hover{box-shadow:0 0 36px rgba(255,215,0,.55),0 0 80px rgba(255,180,100,.28);transform:translateY(-2px) scale(1.04)}
+.btn-no {
+  position:relative; padding:14px 48px; font-family:'Cinzel',serif; font-size:1.1rem; font-weight:600;
+  letter-spacing:.2em; color:rgba(255,80,80,.92); background:linear-gradient(135deg,rgba(160,0,0,.17),rgba(60,0,0,.09));
+  border:1.5px solid rgba(200,30,30,.6); border-radius:50px; cursor:pointer;
+  text-shadow:0 0 11px rgba(255,60,60,.8),0 0 24px rgba(200,0,0,.5);
+  box-shadow:0 0 20px rgba(200,0,0,.2),inset 0 0 18px rgba(200,0,0,.05);
+  transition:all .25s ease;
+}
+.btn-no::before, .btn-no::after { content:'𖤐'; position:absolute; top:50%; transform:translateY(-50%); font-size:.82rem; color:rgba(255,60,60,.7); animation:flicker 1.5s ease infinite; }
+.btn-no::before { left:12px; } .btn-no::after { right:12px; animation-delay:.4s; }
+@keyframes flicker{0%,100%{opacity:.3}50%{opacity:.9}}
+.btn-no:hover{box-shadow:0 0 38px rgba(255,50,50,.42),0 0 80px rgba(200,0,0,.2);transform:translateY(-2px) scale(1.04);color:rgba(255,110,110,1);border-color:rgba(255,50,50,.82)}
+#resultOverlay {
+  position:fixed; inset:0; z-index:12; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none; transition:opacity .7s ease;
+}
+#resultOverlay.visible{opacity:1;pointer-events:all}
+#resultText{text-align:center;padding:0 24px; background: rgba(0,0,0,0.7); padding: 40px; border-radius: 20px; backdrop-filter: blur(8px);}
+</style>
+</head>
+<body>
+<div id="heartsContainer"></div>
+<svg id="flowerCanvas" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="gPink" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="gGreen" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="gSoft" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="gHard" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+</svg>
+<canvas id="fireCanvas"></canvas>
+<canvas id="bloomCanvas"></canvas>
+<div class="layout">
+  <div class="content-box">
+    <div class="top-message">
+      <p>i've had such a good time thus far and i think it's time to make this official</p>
+    </div>
+    <div class="bottom-ui">
+      <div class="main-question">Will you be my boyfriend?</div>
+      <div class="btn-row">
+        <button class="btn-yes" onclick="onYes()">YES</button>
+        <button class="btn-no"  onclick="onNo()">NO</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="resultOverlay"><div id="resultText"></div></div>
+<script>
+const svgEl = document.getElementById('flowerCanvas');
+const W = () => window.innerWidth;
+const H = () => window.innerHeight;
+function ns(tag, a={}) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k,v] of Object.entries(a)) el.setAttribute(k,v);
+  return el;
+}
+const PINKS  = ['#ff14b4','#ff4fd8','#ff80ea','#ff1493','#ff69b4','#ff00cc','#e91e8c'];
+const GREENS = ['#00ff88','#39ffaa','#7fff6f','#00e676','#00ffb3'];
+const HEART_COLORS_LIGHT = ['#ffb3e6', '#ccffff', '#b3ffb3', '#fff9e6', '#ffccd5', '#ff99b2'];
+function initHearts() {
+  const container = document.getElementById('heartsContainer');
+  container.innerHTML = '';
+  for (let i = 0; i < 60; i++) {
+    const heart = document.createElement('div');
+    heart.className = 'floating-heart';
+    heart.innerHTML = '❤';
+    const color = HEART_COLORS_LIGHT[Math.floor(Math.random() * HEART_COLORS_LIGHT.length)];
+    heart.style.webkitTextStroke = `1.5px ${color}`;
+    heart.style.setProperty('--heartColor', color);
+    heart.style.left = Math.random() * 100 + 'vw';
+    heart.style.top = Math.random() * 100 + 'vh';
+    const tx = (Math.random() - 0.5) * 150; 
+    const ty = -(100 + Math.random() * 150); 
+    const angle = Math.atan2(ty, tx) * (180 / Math.PI) + 90;
+    heart.style.setProperty('--tx', `${tx}px`);
+    heart.style.setProperty('--ty', `${ty}px`);
+    heart.style.setProperty('--angle', `${angle}deg`);
+    heart.style.setProperty('--duration', `${3 + Math.random() * 4}s`);
+    heart.style.animationDelay = `-${Math.random() * 5}s, -${Math.random() * 3}s`;
+    container.appendChild(heart);
+  }
+}
+function buildScene() {
+  svgEl.querySelectorAll(':not(defs)').forEach(el=>el.remove());
+  const w=W(), h=H();
+  const types=['rose','daisy','peony','anemone'];
+  const layers = [
+    { scale:.38, groundFrac:.72, sizeMin:20, sizeMax:35, count:8,  opacity:.45 },
+    { scale:.52, groundFrac:.78, sizeMin:28, sizeMax:45, count:10, opacity:.65 },
+    { scale:.72, groundFrac:.85, sizeMin:45, sizeMax:65, count:12, opacity:.85 },
+    { scale:1.0, groundFrac:.95, sizeMin:62, sizeMax:98, count:14, opacity:1.0  }
+  ];
+  layers.forEach((layer,li)=>{
+    const groundY = h * layer.groundFrac;
+    for (let i=0; i<layer.count; i++) {
+      const baseX = w * (.05 + (.9/(layer.count-1))*i);
+      const x = baseX + (Math.random()-.5)*w*.08;
+      const size = (layer.sizeMin + Math.random()*(layer.sizeMax-layer.sizeMin)) * 1;
+      const stemH = size*1.2 + Math.random()*h*.18;
+      const flowerY = groundY - stemH;
+      const plantGroup = ns('g', { opacity: layer.opacity.toString() });
+      svgEl.appendChild(plantGroup);
+      const swayAmt = 4 + Math.random()*4;
+      const swayDur = 4 + Math.random()*3;
+      plantGroup.appendChild(ns('animateTransform',{
+        attributeName:'transform', type:'rotate',
+        values:`${-swayAmt} ${x} ${groundY}; ${swayAmt} ${x} ${groundY}; ${-swayAmt} ${x} ${groundY}`,
+        dur:`${swayDur}s`, repeatCount:'indefinite', calcMode:'spline', keySplines:'.45 0 .55 1; .45 0 .55 1'
+      }));
+      const stemInfo = drawStem(plantGroup, x, groundY, flowerY, layer.scale);
+      const p = PINKS[(li*layer.count+i) % PINKS.length];
+      const a = GREENS[(li*layer.count+i) % GREENS.length];
+      drawFlower(plantGroup, stemInfo.tipX, stemInfo.tipY, size, p, a, types[(li*3+i)%types.length]);
+    }
+  });
+}
+function drawStem(parent, x, groundY, flowerY, depthScale) {
+  const stemW = depthScale;
+  const lean = (Math.random()-.5)*40 * depthScale; 
+  const c1x = x + lean*.45 + (Math.random()-.5)*22;
+  const c1y = groundY - (groundY-flowerY)*.28;
+  const c2x = x + lean*.82 + (Math.random()-.5)*18;
+  const c2y = groundY - (groundY-flowerY)*.62;
+  const tipX = x + lean + (Math.random()-.5)*12;
+  const tipY = flowerY;
+  const d = `M ${x} ${groundY} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${tipX} ${tipY}`;
+  parent.appendChild(ns('path',{ d, stroke:GREENS[0],'stroke-width':stemW*7, fill:'none',opacity:.15,filter:'url(#gGreen)' }));
+  parent.appendChild(ns('path',{ d, stroke:GREENS[1],'stroke-width':stemW*2.4, fill:'none',opacity:.88 }));
+  parent.appendChild(ns('path',{ d, stroke:'#ffffff','stroke-width':stemW*.7, fill:'none',opacity:.14 }));
+  [.35,.62].forEach((t,i)=>{
+    if (i===1 && Math.random()>.55) return;
+    const bt = cubicBezierPoint(x,groundY,c1x,c1y,c2x,c2y,tipX,tipY,t);
+    addLeaf(parent, bt.x, bt.y, i%2===0?1:-1, depthScale);
+  });
+  return { tipX, tipY };
+}
+function cubicBezierPoint(x0,y0,x1,y1,x2,y2,x3,y3,t) {
+  const mt=1-t;
+  return {
+    x: mt*mt*mt*x0 + 3*mt*mt*t*x1 + 3*mt*t*t*x2 + t*t*t*x3,
+    y: mt*mt*mt*y0 + 3*mt*mt*t*y1 + 3*mt*t*t*y2 + t*t*t*y3
+  };
+}
+function addLeaf(parent, x, y, side, scale) {
+  const size = (26+Math.random()*20)*scale;
+  const ang  = side*(36+Math.random()*26);
+  const rad  = ang*Math.PI/180;
+  const tx   = x+Math.cos(rad)*size*1.05;
+  const ty   = y+Math.sin(rad)*size*1.05;
+  const cpx  = x+Math.cos(rad)*size*.52+Math.cos(rad+Math.PI/2)*size*.38*side;
+  const cpy  = y+Math.sin(rad)*size*.52+Math.sin(rad+Math.PI/2)*size*.38*side;
+  const cp2x = x+Math.cos(rad)*size*.52-Math.cos(rad+Math.PI/2)*size*.2*side;
+  const cp2y = y+Math.sin(rad)*size*.52-Math.sin(rad+Math.PI/2)*size*.2*side;
+  const d=`M ${x} ${y} Q ${cpx} ${cpy} ${tx} ${ty} Q ${cp2x} ${cp2y} ${x} ${y} Z`;
+  parent.appendChild(ns('path',{ d, fill:GREENS[2],opacity:.16,filter:'url(#gGreen)' }));
+  parent.appendChild(ns('path',{ d, fill:'none',stroke:GREENS[0],'stroke-width':scale*1.4,opacity:.8 }));
+  parent.appendChild(ns('path',{ d:`M ${x} ${y} Q ${cpx} ${cpy} ${tx} ${ty}`, fill:'none',stroke:GREENS[2],'stroke-width':scale*.6,opacity:.5 }));
+}
+function drawFlower(parent, x, y, size, pColor, aColor, type) {
+  const head = ns('g',{ transform:`translate(${x},${y})` });
+  parent.appendChild(head);
+  head.appendChild(ns('circle',{ cx:0,cy:0,r:size*1.3,fill:pColor,opacity:.06,filter:'url(#gSoft)' }));
+  if      (type==='rose')    drawRose(head,size,pColor,aColor);
+  else if (type==='daisy')   drawDaisy(head,size,pColor,aColor);
+  else if (type==='peony')   drawPeony(head,size,pColor,aColor);
+  else                       drawAnemone(head,size,pColor,aColor);
+}
+function drawRose(g,s,pc,ac) {
+  for (let i=0;i<5;i++) {
+    const a=(360/5)*i+36, rad=a*Math.PI/180;
+    const px=Math.cos(rad)*s*.7,py=Math.sin(rad)*s*.7;
+    g.appendChild(ns('ellipse',{cx:px,cy:py,rx:s*.065,ry:s*.26,fill:'none',stroke:GREENS[0],'stroke-width':s*.022,opacity:.65,transform:`rotate(${a+90},${px},${py})`}));
+  }
+  for (let l=5;l>=1;l--) {
+    const count=5+l, r=s*(.18+l*.19), off=l*22;
+    for (let i=0;i<count;i++) {
+      const a=(360/count)*i+off, rad=a*Math.PI/180;
+      const px=Math.cos(rad)*r*.58,py=Math.sin(rad)*r*.58;
+      const pL=s*(.19+l*.022),pW=s*(.086+l*.01);
+      g.appendChild(ns('ellipse',{cx:px,cy:py,rx:pW*1.8,ry:pL*1.3,fill:pc,opacity:.06+(5-l)*.054,filter:'url(#gSoft)',transform:`rotate(${a+90},${px},${py})`}));
+      g.appendChild(ns('ellipse',{cx:px,cy:py,rx:pW,ry:pL,fill:'none',stroke:pc,'stroke-width':s*.03,opacity:.82+.03*l,filter:'url(#gHard)',transform:`rotate(${a+90},${px},${py})`}));
+    }
+  }
+  g.appendChild(ns('circle',{cx:0,cy:0,r:s*.095,fill:'white',opacity:.88}));
+}
+function drawDaisy(g,s,pc,ac) {
+  const count=16;
+  for (let i=0;i<count;i++) {
+    const a=(360/count)*i,rad=a*Math.PI/180;
+    const px=Math.cos(rad)*s*.8,py=Math.sin(rad)*s*.8;
+    const pL=s*.44,pW=s*.095;
+    g.appendChild(ns('ellipse',{cx:px,cy:py,rx:pW*1.9,ry:pL*1.22,fill:pc,opacity:.2,filter:'url(#gSoft)',transform:`rotate(${a+90},${px},${py})`}));
+    g.appendChild(ns('ellipse',{cx:px,cy:py,rx:pW,ry:pL,fill:'none',stroke:pc,'stroke-width':s*.036,opacity:.92,filter:'url(#gHard)',transform:`rotate(${a+90},${px},${py})`}));
+  }
+  g.appendChild(ns('circle',{cx:0,cy:0,r:s*.28,fill:ac,opacity:.4,filter:'url(#gGreen)'}));
+  g.appendChild(ns('circle',{cx:0,cy:0,r:s*.095,fill:'white',opacity:.88}));
+}
+function drawPeony(g,s,pc,ac) {
+  for (let l=5;l>=1;l--) {
+    const count=6+l*2,r=s*(.17+l*.18),off=l*16;
+    for (let i=0;i<count;i++) {
+      const a=(360/count)*i+off,rad=a*Math.PI/180;
+      const px=Math.cos(rad)*r*.6,py=Math.sin(rad)*r*.6;
+      const pL=s*(.18+l*.024),pW=s*(.095+l*.011);
+      g.appendChild(ns('ellipse',{cx:px,cy:py,rx:pW*1.65,ry:pL*1.28,fill:pc,opacity:.055+(5-l)*.065,filter:'url(#gSoft)',transform:`rotate(${a+90},${px},${py})`}));
+      g.appendChild(ns('ellipse',{cx:px,cy:py,rx:pW,ry:pL,fill:'none',stroke:pc,'stroke-width':s*.028,opacity:.74,filter:'url(#gHard)',transform:`rotate(${a+90},${px},${py})`}));
+    }
+  }
+  g.appendChild(ns('circle',{cx:0,cy:0,r:s*.07,fill:'white',opacity:.94}));
+}
+function drawAnemone(g,s,pc,ac) {
+  for (let i=0;i<6;i++) {
+    const a=(360/6)*i,rad=a*Math.PI/180;
+    const px=Math.cos(rad)*s*.7,py=Math.sin(rad)*s*.7;
+    const pL=s*.5,pW=s*.2;
+    g.appendChild(ns('ellipse',{cx:px,cy:py,rx:pW*1.55,ry:pL*1.2,fill:pc,opacity:.2,filter:'url(#gSoft)',transform:`rotate(${a+90},${px},${py})`}));
+    g.appendChild(ns('ellipse',{cx:px,cy:py,rx:pW,ry:pL,fill:'none',stroke:pc,'stroke-width':s*.038,opacity:.9,filter:'url(#gPink)',transform:`rotate(${a+90},${px},${py})`}));
+  }
+  g.appendChild(ns('circle',{cx:0,cy:0,r:s*.28,fill:'none',stroke:ac,'stroke-width':s*.05,opacity:.48,filter:'url(#gGreen)'}));
+  g.appendChild(ns('circle',{cx:0,cy:0,r:s*.095,fill:'white',opacity:.9}));
+}
+buildScene();
+initHearts(); 
+window.addEventListener('resize',()=>{ buildScene(); initHearts(); });
+const fireCanvas = document.getElementById('fireCanvas');
+const fCtx = fireCanvas.getContext('2d');
+let fireActive=false, fireParticles=[];
+function newFireP(init=false) {
+  return {
+    x: Math.random()*W(),
+    y: init ? H()*(0.6+Math.random()*0.4) : H() + 20,
+    vx: (Math.random()-0.5)*2,
+    vy: -(4+Math.random()*6),
+    life: 0, maxLife: 60+Math.random()*40,
+    size: 30+Math.random()*60
+  };
+}
+function animFire(ts) {
+  if (!fireActive) return;
+  fireCanvas.width=W(); fireCanvas.height=H();
+  fCtx.globalCompositeOperation = 'screen';
+  if (fireParticles.length < 250) {
+    for (let i=0;i<6;i++) fireParticles.push(newFireP());
+  }
+  for (let i=fireParticles.length-1;i>=0;i--) {
+    const p=fireParticles[i];
+    p.x+=p.vx; p.y+=p.vy; p.life+=1.2;
+    const prog=p.life/p.maxLife;
+    if (prog>1){fireParticles.splice(i,1);continue;}
+    const alpha=1-Math.pow(prog, 1.5);
+    const r=p.size*(1-prog*0.5);
+    const grad=fCtx.createRadialGradient(p.x,p.y,0,p.x,p.y,r);
+    grad.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+    grad.addColorStop(0.2, `rgba(255, 200, 50, ${alpha})`);
+    grad.addColorStop(0.6, `rgba(255, 80, 0, ${alpha*0.6})`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    fCtx.beginPath(); fCtx.arc(p.x,p.y,r,0,Math.PI*2);
+    fCtx.fillStyle=grad; fCtx.fill();
+  }
+  requestAnimationFrame(animFire);
+}
+const bloomCanvas = document.getElementById('bloomCanvas');
+const bCtx = bloomCanvas.getContext('2d');
+let bloomActive=false, bloomPetals=[];
+const bloomColors=[...PINKS,...GREENS,'#ffd700','#fff0fa'];
+function newBloomPetal() {
+  return {
+    x: Math.random()*W(), y: H()+10,
+    vx:(Math.random()-.5)*2.5, vy:-(2.5+Math.random()*5.5),
+    rot:Math.random()*360, rotV:(Math.random()-.5)*4.5,
+    w:8+Math.random()*20, h:14+Math.random()*36,
+    color:bloomColors[Math.floor(Math.random()*bloomColors.length)],
+    life:0, maxLife:.6+Math.random()*.35,
+    wobble:Math.random()*Math.PI*2
+  };
+}
+function animBloom(ts) {
+  if (!bloomActive) return;
+  bloomCanvas.width=W(); bloomCanvas.height=H();
+  bCtx.clearRect(0,0,W(),H());
+  if (bloomPetals.length < 40) {
+      for (let i=0;i<2;i++) bloomPetals.push(newBloomPetal());
+  }
+  for (let i=bloomPetals.length-1;i>=0;i--) {
+    const p=bloomPetals[i];
+    p.y+=p.vy; p.x+=p.vx+Math.sin(ts*.002+p.wobble)*1.1; p.rot+=p.rotV; p.life+=.009;
+    const prog=p.life/p.maxLife;
+    if (prog>1||p.y<-60){bloomPetals.splice(i,1);continue;}
+    const alpha=prog<.15?prog/.15:prog>.82?(1-prog)/.18:1;
+    bCtx.save(); bCtx.translate(p.x,p.y); bCtx.rotate(p.rot*Math.PI/180);
+    bCtx.globalAlpha=alpha*.88;
+    bCtx.beginPath(); bCtx.ellipse(0,0,p.w*.45,p.h*.5,0,0,Math.PI*2);
+    bCtx.fillStyle=p.color; bCtx.shadowColor=p.color; bCtx.shadowBlur=12;
+    bCtx.fill(); bCtx.restore();
+  }
+  requestAnimationFrame(animBloom);
+}
+function onYes() {
+  document.querySelector('.content-box').style.opacity='0';
+  bloomCanvas.classList.add('active');
+  bloomActive=true;
+  bloomCanvas.width=W(); bloomCanvas.height=H();
+  requestAnimationFrame(animBloom);
+  const overlay=document.getElementById('resultOverlay');
+  document.getElementById('resultText').innerHTML=`
+    <div style="font-family:'Cinzel',serif;font-size:clamp(1.5rem,4vw,3.2rem);font-weight:600;
+      color:#ff14b4;
+      text-shadow:0 0 20px #ff14b4; margin-bottom:16px;">
+      I LOVE YOUUU I HOPE WE LAST A LONG TIME!! 💕✨
+    </div>`;
+  overlay.style.zIndex='15';
+  setTimeout(()=>overlay.classList.add('visible'),600);
+}
+function onNo() {
+  document.querySelector('.content-box').style.opacity='0';
+  document.body.style.background='#000'; 
+  document.getElementById('flowerCanvas').style.opacity='.1';
+  document.getElementById('heartsContainer').style.opacity='0'; 
+  fireCanvas.classList.add('active');
+  fireActive=true;
+  fireCanvas.width=W(); fireCanvas.height=H();
+  for (let i=0;i<80;i++) fireParticles.push(newFireP(true));
+  requestAnimationFrame(animFire);
+  const overlay=document.getElementById('resultOverlay');
+  document.getElementById('resultText').innerHTML=`
+    <div style="font-family:'Cinzel',serif;font-size:clamp(1.8rem,5vw,3.5rem);font-weight:600;
+      color:rgba(255,60,30,.96);
+      text-shadow:0 0 28px rgba(255,60,0,1),0 0 75px rgba(200,20,0,.75);margin-bottom:14px;">
+      The garden burns… 🔥
+    </div>
+    <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;
+      font-size:clamp(.9rem,2.1vw,1.42rem);color:rgba(255,140,80,.78);
+      text-shadow:0 0 20px rgba(255,60,0,.55);letter-spacing:.08em;">
+      even the neon flowers mourn
+    </div>`;
+  setTimeout(()=>overlay.classList.add('visible'),900);
+}
+</script>
+</body>
+</html>
